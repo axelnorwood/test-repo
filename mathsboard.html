@@ -634,7 +634,7 @@ balance:{title:'Pan balance',carry:1,d:()=>({left:'',right:'',show:true}),settin
       beam.style.transform=`rotate(${a}deg)`;pans[0].style.transform=`translate(${dx}px,${-dy}px)`;pans[1].style.transform=`translate(${-dx}px,${dy}px)`;
       tl.textContent=st.show?fmt(L):'';tr.textContent=st.show?fmt(R):'';sign.textContent=a===0?'=':diff>0?'<':'>'};
     b.append(wrap,h('div',{class:'hint',style:{marginTop:'6px'}},'Drop shapes, rods or cards on a pan, or type a number or calculation such as 4×3 under it.'))}},
-numberline:{title:'Number line',d:()=>({min:'0',max:'20',step:'',lab:'all',jumps:[],marks:[],pend:null,sent:'',cap:''}),
+numberline:{title:'Number line',d:()=>({min:'0',max:'20',step:'',lab:'all',jumps:[],marks:[],pend:null,sent:'',cap:'',bridge:true}),
   settings:[{k:'lab',l:'Numbers',t:'sel',o:[['all','Show all numbers'],['ends','Ends only'],['none','Blank line']]}],
   render(b,st,ctx){
     let mn=num(st.min),mx=num(st.max),warn='';const typed=v=>{const t=String(v??'').trim();return t&&t!=='-'&&t!=='.'};
@@ -645,7 +645,7 @@ numberline:{title:'Number line',d:()=>({min:'0',max:'20',step:'',lab:'all',jumps
     if(typed(st.step)&&!(step>0)){warn=warn||'The interval needs to be a number above 0.';step=NaN}
     if(step>0&&span/step>100){warn=warn||'That interval makes over 100 marks, so it is set automatically.';step=NaN}
     const auto=!(step>0);if(auto)step=niceStep(span,20);
-    const W=780,P=42,Y=100,H=146,n=Math.floor(span/step+1e-9);const X=v=>P+(v-mn)/span*(W-2*P);
+    const W=780,P=42,Y=124,H=170,n=Math.floor(span/step+1e-9);const X=v=>P+(v-mn)/span*(W-2*P);
     const chars=Math.max(...[mn,mx,mn+step,mx-step].map(v=>fmt(r6(v)).length));const gap=(W-2*P)*step/span;
     const every=[1,2,4,5,10,20,25,50,100].find(e=>gap*e>=chars*9+10)||200;
     const svg=sv('svg',{width:W,height:H,class:'nl'});
@@ -655,9 +655,9 @@ numberline:{title:'Number line',d:()=>({min:'0',max:'20',step:'',lab:'all',jumps
       if((st.lab==='all'&&maj)||(st.lab==='ends'&&(i===0||(i===n&&Math.abs(v-mx)<1e-9))))lbl(x,v)}
     if(Math.abs(r6(mn+n*step)-mx)>1e-9){svg.append(sv('line',{x1:X(mx),x2:X(mx),y1:Y-11,y2:Y+11,class:'tk'}));const lastLab=r6(mn+Math.floor(n/every)*every*step);if(st.lab!=='none'&&X(mx)-X(lastLab)>chars*9+10)lbl(X(mx),mx)}
     const hit=sv('rect',{x:0,y:Y-30,width:W,height:H-(Y-30),class:'hit'});svg.append(hit);
-    const inR=v=>v>=mn-1e-9&&v<=mx+1e-9;
-    st.jumps.forEach((j,ji)=>{if(!inR(j[0])||!inR(j[1]))return;const a=X(j[0]),c=X(j[1]),hh=Math.min(70,18+Math.abs(c-a)*.35);const d=`M${a} ${Y-4} Q${(a+c)/2} ${Y-4-hh*2} ${c} ${Y-4}`;const dir=c>a?1:-1;const df=r6(j[1]-j[0]);
-      const g=sv('g',{});g.append(sv('path',{d,class:'jump'}),sv('path',{d:`M${c} ${Y-4} l${-dir*10} -6 M${c} ${Y-4} l${-dir*3} -11`,class:'jump'}),sv('text',{x:(a+c)/2,y:Y-10-hh,class:'jl'},j[2]!=null?j[2]:(df>0?'+':'−')+fmt(Math.abs(df))));
+    const inR=v=>v>=mn-1e-9&&v<=mx+1e-9;const placed=[];
+    st.jumps.forEach((j,ji)=>{if(!inR(j[0])||!inR(j[1]))return;const a=X(j[0]),c=X(j[1]),hh=Math.min(70,18+Math.abs(c-a)*.35);let ly=Y-10-hh;const lx=(a+c)/2;for(let t=0;t<6&&placed.some(q=>Math.abs(q[0]-lx)<34&&Math.abs(q[1]-ly)<15);t++)ly-=16;placed.push([lx,ly]);const d=`M${a} ${Y-4} Q${(a+c)/2} ${Y-4-hh*2} ${c} ${Y-4}`;const dir=c>a?1:-1;const df=r6(j[1]-j[0]);
+      const g=sv('g',{});g.append(sv('path',{d,class:'jump'}),sv('path',{d:`M${c} ${Y-4} l${-dir*10} -6 M${c} ${Y-4} l${-dir*3} -11`,class:'jump'}),sv('text',{x:(a+c)/2,y:ly,class:'jl'},j[2]!=null?j[2]:(df>0?'+':'−')+fmt(Math.abs(df))));
       const hp=sv('path',{d,class:'jhit'});hp.append(sv('title',{},'Click to remove this jump'));hp.addEventListener('click',()=>ctx.update(s=>s.jumps.splice(ji,1)));g.append(hp);svg.append(g)});
     st.marks.forEach((m,mi)=>{const mv=Array.isArray(m)?m[0]:m,ml=Array.isArray(m)?m[1]:fmt(m);if(!inR(mv))return;const x=X(mv);const g=sv('g',{class:'nlm'});g.append(sv('path',{d:`M${x} ${Y+3} l-8 14 h16z`}),sv('text',{x,y:Y+46,class:'ml'},ml));g.append(sv('title',{},'Click to remove this marker'));g.addEventListener('click',()=>ctx.update(s=>s.marks.splice(mi,1)));svg.append(g)});
     if(st.pend!=null&&inR(st.pend))svg.append(sv('circle',{cx:X(st.pend),cy:Y,r:7,class:'pend'}));
@@ -669,7 +669,7 @@ numberline:{title:'Number line',d:()=>({min:'0',max:'20',step:'',lab:'all',jumps
     const addJump=()=>{const a=num(ja.value),c=num(jb.value);if(isNaN(a)||isNaN(c)||a===c)return;ctx.update(s=>{s.jumps.push([a,c]);extend(s,a);extend(s,c)})};
     const ja=tf(ctx,'ja','from',addJump,{w:'64px',label:'Jump from'}),jb=tf(ctx,'jb','to',addJump,{w:'64px',label:'Jump to'});
     const sP=isBlank(st.sent)?null:parseSentence(st.sent);
-    b.append(frow('Number sentence',lf(ctx,st,'sent',{w:'190px',mode:'text',ph:'e.g. 7 + 5 or 3 × 4',label:'Number sentence',on:(s,v)=>{const P=parseSentence(v);if(P.err||P.empty)return;const ns=nlState(P,false);if(ns)Object.assign(s,ns)}}),sP&&sP.err?mk(false,sP.err):null),
+    b.append(frow('Number sentence',lf(ctx,st,'sent',{w:'190px',mode:'text',ph:'e.g. 7 + 5 or 3 × 4',label:'Number sentence',on:(s,v)=>{const P=parseSentence(v);if(P.err||P.empty)return;const ns=nlState(P,false,s.bridge!==false);if(ns)Object.assign(s,ns)}}),(()=>{const id=`k${ctx.id}_bridge`;const c=h('input',{type:'checkbox',id,checked:st.bridge!==false});c.onchange=()=>ctx.update(s=>{s.bridge=c.checked;const P=parseSentence(s.sent);if(!P.err&&!P.empty){const ns=nlState(P,false,s.bridge);if(ns)Object.assign(s,ns)}});return h('label',{class:'fchk',for:id},c,'Jump through tens and hundreds')})(),sP&&sP.err?mk(false,sP.err):null),
       st.cap?h('div',{class:'nlcap'},st.cap):null,
       frow('From',lf(ctx,st,'min',{label:'Start'}),'to',lf(ctx,st,'max',{label:'End'}),'counting in',lf(ctx,st,'step',{ph:'auto',label:'Interval'}),auto&&!warn?h('span',{class:'hint'},'auto: '+fmt(step)):null),
       svg,frow('Mark',mi,btn('Add',()=>addMark(mi.value)),h('span',{class:'vsep'}),'Jump from',ja,'to',jb,btn('Add',addJump),btn('Clear',()=>ctx.update(s=>{s.jumps=[];s.marks=[];s.pend=null;s.cap='';s.sent=''}))),
@@ -1103,13 +1103,17 @@ function b10G(n){if(!n)return cardsG('0');const u=13,s=130,o=65;const th=Math.fl
 function countersG(colors,per){const n=colors.length;if(!n)return cardsG('0');per=per||(n<=10?5:10);const d=U+3;const p=colors.map((c,i)=>{const r=Math.floor(i/per),k=i%per;return{st:{t:'counter',c},x:k*d+Math.floor(k/5)*6,y:r*d}});const cols=Math.min(n,per);return grp(p,cols*d-3+Math.floor((cols-1)/5)*6,Math.ceil(n/per)*d-3)}
 const arrayG=(r,c,color='r')=>countersG(Array(r*c).fill(color),c);
 function pvcG(n){if(!n)return cardsG('0');const cols=[];[1000,100,10,1].forEach(pv=>{const d=pv===1000?Math.floor(n/1000):Math.floor(n/pv)%10;if(d){const p=[];for(let i=0;i<d;i++)p.push({st:{t:'pvc',n:pv},x:Math.floor(i/5)*43,y:(i%5)*43});cols.push(grp(p,Math.ceil(d/5)*43-3,Math.min(d,5)*43-3))}});return row(cols,12,'top')}
-function nlState(P,reveal){const {vals,n,op,unk,rem}=P;const hid=i=>i===unk&&!reveal;const jumps=[],marks=[];const pts=[];
+function bridgeSplit(from,to){const up=to>from;const seq=[from];let c=from;const push=v=>{if(up?(v>c&&v<=to):(v<c&&v>=to)){seq.push(v);c=v}};
+  if(up){push(Math.ceil(c/10)*10);push(Math.ceil(c/100)*100);push(Math.floor(to/100)*100);push(Math.floor(to/10)*10);push(to)}
+  else{push(Math.floor(c/10)*10);push(Math.floor(c/100)*100);push(Math.ceil(to/100)*100);push(Math.ceil(to/10)*10);push(to)}
+  const out=[];for(let i=1;i<seq.length;i++)out.push([seq[i-1],seq[i]]);return out.length?out:[[from,to]]}
+function nlState(P,reveal,bridge=true){const {vals,n,op,unk,rem}=P;const hid=i=>i===unk&&!reveal;const jumps=[],marks=[];const pts=[];const parts=[];
   if(!op){marks.push([vals[0],hid(0)?'?':fmt(vals[0])]);pts.push(vals[0]);if(P.hasRight){marks.push([vals[1],fmt(vals[1])]);pts.push(vals[1])}}
-  else if(op==='+'||op==='-'){let cur=vals[0];pts.push(cur);marks.push([cur,hid(0)?'?':fmt(cur)]);for(let i=1;i<n;i++){const nx=op==='+'?cur+vals[i]:cur-vals[i];jumps.push([cur,nx,hid(i)?'?':(op==='+'?'+':'−')+fmt(vals[i])]);cur=nx;pts.push(cur)}marks.push([cur,hid(n)?'?':fmt(cur)])}
+  else if(op==='+'||op==='-'){let cur=vals[0];pts.push(cur);marks.push([cur,hid(0)?'?':fmt(cur)]);for(let i=1;i<n;i++){const nx=op==='+'?cur+vals[i]:cur-vals[i];if(hid(i)||!bridge)jumps.push([cur,nx,hid(i)?'?':(op==='+'?'+':'−')+fmt(vals[i])]);else{const sp=bridgeSplit(cur,nx);sp.forEach(([a,c])=>{const lab=(c>a?'+':'−')+fmt(Math.abs(c-a));jumps.push([a,c,lab]);pts.push(c)});if(sp.length>1)parts.push(...sp.map(([a,c])=>(c>a?'+':'−')+fmt(Math.abs(c-a))))}cur=nx;pts.push(cur)}marks.push([cur,hid(n)?'?':fmt(cur)])}
   else if(op==='×'){const [a,b]=vals;if(a>30)return null;pts.push(0,a*b);for(let k=0;k<a;k++)jumps.push([k*b,(k+1)*b,hid(1)?'?':'+'+fmt(b)]);marks.push([0,'0'],[a*b,hid(2)?'?':fmt(a*b)])}
   else{const [a,b]=vals;const q=Math.floor(a/b);if(q>40)return null;pts.push(0,a);for(let k=0;k<q;k++)jumps.push([k*b,(k+1)*b,hid(1)?'?':'+'+fmt(b)]);if(rem)jumps.push([q*b,a,'+'+fmt(rem)]);marks.push([0,'0'],[a,hid(0)?'?':fmt(a)])}
-  let lo=Math.min(...pts),hi=Math.max(...pts);if(lo>=0&&lo<=(hi-lo)*1.5)lo=0;if(hi-lo<10)hi=lo+10;const step=niceStep(hi-lo,20);lo=Math.floor(lo/step)*step;hi=Math.ceil(hi/step)*step;
-  const keep=CUR;CUR={...GEN,reveal};let cap=sentenceTokens(P).join(' ');CUR=keep;if(op==='×'&&!hid(0)&&!hid(1))cap+=`   (${vals[0]} jumps of ${vals[1]})`;if(op==='÷'&&!hid(2)&&!hid(1))cap+=`   (${Math.floor(vals[0]/vals[1])} jumps of ${vals[1]}${rem?', '+rem+' left over':''})`;
+  let lo=Math.min(...pts),hi=Math.max(...pts);if(lo>=0&&(hi<=20||lo<=(hi-lo)*0.5))lo=0;if(hi-lo<10)hi=lo+10;const step=niceStep(hi-lo,20);lo=Math.floor(lo/step)*step;hi=Math.ceil(hi/step)*step;
+  const keep=CUR;CUR={...GEN,reveal};let cap=sentenceTokens(P).join(' ');CUR=keep;if(parts.length&&!hid(n))cap+=`   (${parts.join(' ')})`;if(op==='×'&&!hid(0)&&!hid(1))cap+=`   (${vals[0]} jumps of ${vals[1]})`;if(op==='÷'&&!hid(2)&&!hid(1))cap+=`   (${Math.floor(vals[0]/vals[1])} jumps of ${vals[1]}${rem?', '+rem+' left over':''})`;
   return{min:String(r6(lo)),max:String(r6(hi)),step:'',jumps,marks,pend:null,cap}}
 function genModel(P,type){const {vals,n,op,rel,unk,rem}=P;const hid=i=>i===unk&&!CUR.reveal;
   const Gn=(v,ci='r')=>type==='shapes'?shapesG(v):type==='rods'?rodsG(v):type==='b10'?b10G(v):type==='pvc'?pvcG(v):countersG(Array(v).fill(ci));
